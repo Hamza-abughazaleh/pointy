@@ -1,0 +1,41 @@
+version: '2'
+services:
+  common_server:
+    build:
+      context: ../
+      args:
+        settings: 'pointy.settings'
+    volumes:
+      - ../:/usr/src/app/
+      - /usr/src/app/node_modules/
+
+  server:
+    extends:
+      service: common_server
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+
+    environment:
+      DJANGO_SETTINGS_MODULE: 'pointy.settings'
+      DEBUG: 'true'
+    command: python manage.py runserver 0.0.0.0:8000
+    links:
+      - redis
+
+  redis:
+    image: redis:2.8.19
+    hostname: redis
+    expose:
+      - "6379"
+
+  celery-beat:
+    extends:
+      service: common_server
+    command: celery -A pointy beat -l info
+
+  celery-worker:
+    extends:
+      service: common_server
+    command: celery -A pointy worker -l info
